@@ -41,7 +41,7 @@ void hexDump (char *desc, void *addr, int len) {
 
 
 int main() {
-	uint32_t size = 0;
+	int32_t size1 = 0, size2 = 0;
 
 	struct tbses s;
 	tb_sesinit(&s);
@@ -52,26 +52,25 @@ int main() {
 	char greet[128];
 	tb_sesrecv(&s, greet, 128, 1);
 
-	char *buf = NULL; assert(buf = (char *)calloc(512, 1));
+//	char *buf = NULL; assert(buf = (char *)calloc(512, 1));
+	char buf[] = {0xce, 0x00, 0x00, 0x00, 0x1b, 0x82, 0x00, 0x01, 0x01, 0xce, 0x00, 0x00, 0x00, 0x00, 0x85, 0x10, 0xcd, 0x01, 0x18, 0x11, 0x02, 0x13, 0x00, 0x12, 0x64, 0x20, 0x91, 0xa4, 0x74, 0x65, 0x73, 0x74};
 
-	struct tp req;
-	tp_init(&req, buf, 512, NULL, NULL);
-	tp_select(&req, 280, 2, 0, 100);
-	tp_key(&req, 1);
-	tp_encode_str(&req, "test", 4);
-	size = tp_used(&req);
-	int rc = tb_sessend(&s, buf, size);
+	int rc = tb_sessend(&s, buf, 27);
+	assert(rc != -1);
+	assert(tb_sessync(&s));
+	sleep(1);
+	rc = tb_sessend(&s, buf + 27, 5);
 	assert(rc != -1);
 	assert(tb_sessync(&s));
 
 	tb_sesrecv(&s, buf, 5, 1);
 	const char *p = buf;
-	size = mp_decode_uint(&p);
+	size1 = mp_decode_uint(&p);
 	uint32_t rsize = tb_sesrecv(&s, buf + 5, 507, 0);
-	printf("expected: %d bytes\n", size);
-	hexDump("expected", buf + 5, size);
+	printf("expected: %d bytes\n", size1);
+	hexDump("expected", buf + 5, size1);
 	printf("got: %d bytes\n", rsize);
 	hexDump("got", buf + 5, rsize);
-	assert(rsize == size);
+	assert(rsize == size1);
 	return 0;
 }
